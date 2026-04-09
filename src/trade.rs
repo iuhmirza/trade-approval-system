@@ -102,13 +102,49 @@ impl Trade {
         }
     }
     
+    fn accept(&mut self, user_id: u64, notes: String, details: Option<TradeDetails>) -> Result<(), TradeError> {
+        match details {
+            Some(details) => {
+                match details.validate() {
+                    Ok(_) => {
+                        match self.state {
+                            TradeState::PendingApproval => {
+                                self.push_action(
+                                    user_id,
+                                    TradeState::PendingApproval,
+                                    TradeState::NeedsReapproval,
+                                    notes
+                                );
+                                self.state = TradeState::NeedsReapproval;
+                                self.details = details;
+                                Ok(())
+                            }
+                            _ => Err(TradeError::NotValid)
+                        }
+                    }
+                    Err(e) => Err(e)
+                }
+            }
+            None => {
+                match self.state {
+                    TradeState::PendingApproval => {
+                        self.push_action(
+                            user_id,
+                            TradeState::PendingApproval,
+                            TradeState::Approved,
+                            notes
+                        );
+                        self.state = TradeState::Approved;
+                        Ok(())
+                    }
+                    _ => Err(TradeError::NotValid)
+                }
+            }
+        }
+    }
+    
     fn approve(&mut self, user_id: u64, notes: String) -> Result<(), TradeError> {
         match self.state {
-            TradeState::PendingApproval => {
-                self.push_action(user_id, TradeState::PendingApproval, TradeState::Approved, notes);
-                self.state = TradeState::Approved;
-                Ok(())
-            },
             TradeState::NeedsReapproval => {
                 if self.requester_id != user_id {
                     return Err(TradeError::NotAuthorized);
@@ -133,12 +169,11 @@ impl Trade {
         if !cancellable {
             return Err(TradeError::NotValid);
         }
-        let mut state = std::mem::replace(&mut self.state, TradeState::Cancelled);
+        let state = std::mem::replace(&mut self.state, TradeState::Cancelled);
         self.push_action(user_id, state, TradeState::Cancelled, notes);
         Ok(())
     }
     
-    fn update(&mut self) {}
     
     fn send_to_execute(&mut self) {}
     
@@ -152,7 +187,16 @@ impl Trade{
 }
 
 impl TradeDetails {
-    pub fn validate(&self) -> Result<(), ()> {
+    pub fn validate(&self) -> Result<(), TradeError> {
+        if !(self.trade_date <= self.value_date && self.value_date <= self.delivery_date) {
+            return Err(TradeError::NotValid)
+        }
+        if self.trading_entity.is_empty() || self.counterparty.is_empty() {
+            return Err(TradeError::NotValid)
+        }
+        if self.notional_amount == 0 {
+            return Err(TradeError::NotValid)
+        }
         Ok(())
     }
 }
