@@ -110,7 +110,7 @@ pub enum TradeState {
     PendingApproval,
     NeedsReapproval,
     Approved,
-    SendToCounterparty,
+    SentToCounterparty,
     Executed,
     Cancelled,
 }
@@ -231,7 +231,7 @@ impl Trade {
             TradeState::NeedsReapproval => true,
             TradeState::PendingApproval => true,
             TradeState::Approved => true,
-            TradeState::SendToCounterparty => true,
+            TradeState::SentToCounterparty => true,
             _ => false,
         };
         if !cancellable {
@@ -248,10 +248,10 @@ impl Trade {
                 self.push_history(
                     user_id,
                     TradeState::Approved,
-                    TradeState::SendToCounterparty,
+                    TradeState::SentToCounterparty,
                     notes,
                 );
-                self.state = TradeState::SendToCounterparty;
+                self.state = TradeState::SentToCounterparty;
                 Ok(())
             }
             _ => Err(TradeError::NotValid),
@@ -265,10 +265,10 @@ impl Trade {
         strike: Decimal,
     ) -> Result<(), TradeError> {
         match self.state {
-            TradeState::SendToCounterparty => {
+            TradeState::SentToCounterparty => {
                 self.push_history(
                     user_id,
-                    TradeState::SendToCounterparty,
+                    TradeState::SentToCounterparty,
                     TradeState::Executed,
                     notes,
                 );
@@ -360,7 +360,7 @@ impl fmt::Display for TradeState {
             TradeState::PendingApproval => "PendingApproval",
             TradeState::NeedsReapproval => "NeedsReapproval",
             TradeState::Approved => "Approved",
-            TradeState::SendToCounterparty => "SentToCounterparty",
+            TradeState::SentToCounterparty => "SentToCounterparty",
             TradeState::Executed => "Executed",
             TradeState::Cancelled => "Cancelled",
         };

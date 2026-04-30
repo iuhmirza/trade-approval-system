@@ -138,7 +138,7 @@ mod tests {
         r.send_to_execute(id, user2(), String::new()).unwrap();
         assert_eq!(
             r.get_trade(id).unwrap().state,
-            TradeState::SendToCounterparty
+            TradeState::SentToCounterparty
         );
     }
 
