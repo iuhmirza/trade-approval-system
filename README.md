@@ -67,7 +67,7 @@ Transitions an `Approved` trade to `SendToCounterparty`.
 
 ---
 
-### `book(trade_id, user_id, notes, strike: String) -> Result<(), TradeError>`
+### `book(trade_id, user_id, notes, strike) -> Result<(), TradeError>`
 Transitions a `SendToCounterparty` trade to `Executed` and records the agreed strike rate.
 
 **Errors:** `NotFound` · `NotValid` if the trade is not in `SendToCounterparty`.
@@ -123,7 +123,7 @@ let id = registry.create_trade(user1, details)?;
 registry.submit(id, user1, "Trade details provided.".to_string())?;
 registry.accept(id, user2, "Approver confirms trade.".to_string(), None)?;
 registry.send_to_execute(id, user2, "Sent to counterparty.".to_string())?;
-registry.book(id, user1, "Executed and booked.".to_string(), "1.3001".to_string())?;
+registry.book(id, user1, "Executed and booked.".to_string(), dec!(1.3001))?;
 
 assert_eq!(registry.get_trade(id)?.state, TradeState::Executed);
 ```
@@ -135,7 +135,7 @@ let id = registry.create_trade(user1, details)?;
 registry.submit(id, user1, "Trade details provided.".to_string())?;
 
 let mut updated = details.clone();
-updated.notional_amount = 1_200_000;
+updated.notional_amount = dec!(1_200_000);
 registry.accept(id, user2, "Notional updated.".to_string(), Some(updated))?;
 
 registry.approve(id, user1, "Reapproved.".to_string())?;
