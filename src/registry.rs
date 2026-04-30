@@ -1,6 +1,7 @@
 use std::{collections::HashMap, fmt};
 
 use chrono::NaiveDate;
+use rust_decimal::Decimal;
 
 use crate::{
     error::TradeError,
@@ -154,7 +155,7 @@ impl TradeRegistry {
         trade_id: TradeId,
         user_id: UserId,
         notes: String,
-        strike: String,
+        strike: Decimal,
     ) -> Result<(), TradeError> {
         self.trades
             .get_mut(&trade_id)
@@ -170,12 +171,12 @@ pub struct TradeDifference {
     pub direction: Option<(Direction, Direction)>,
     pub style: Option<(String, String)>,
     pub notional_currency: Option<(NotionalCurrency, NotionalCurrency)>,
-    pub notional_amount: Option<(u64, u64)>,
+    pub notional_amount: Option<(Decimal, Decimal)>,
     pub underlying: Option<(String, String)>,
     pub trade_date: Option<(NaiveDate, NaiveDate)>,
     pub value_date: Option<(NaiveDate, NaiveDate)>,
     pub delivery_date: Option<(NaiveDate, NaiveDate)>,
-    pub strike: Option<(Option<String>, Option<String>)>,
+    pub strike: Option<(Option<Decimal>, Option<Decimal>)>,
 }
 
 impl TradeDifference {
@@ -221,8 +222,8 @@ impl fmt::Display for TradeDifference {
         show!(self.delivery_date, "delivery_date:");
 
         if let Some((before, after)) = &self.strike {
-            let b = before.as_deref().unwrap_or("None");
-            let a = after.as_deref().unwrap_or("None");
+            let b = before.map(|x| x.to_string()).unwrap_or(String::from("None"));
+            let a = after.map(|x| x.to_string()).unwrap_or(String::from("None"));
             writeln!(f, "  {:20} {} -> {}", "strike:", b, a)?;
         }
 

@@ -7,6 +7,7 @@ mod user;
 #[cfg(test)]
 mod tests {
     use chrono::NaiveDate;
+    use rust_decimal_macros::dec;
 
     use crate::{
         error::TradeError,
@@ -30,7 +31,7 @@ mod tests {
             Direction::Buy,
             "Forward".to_string(),
             NotionalCurrency::GBP,
-            1_000_000,
+            dec!(1_000_000),
             "GBPUSD".to_string(),
             NaiveDate::from_ymd_opt(2025, 1, 1).unwrap(),
             NaiveDate::from_ymd_opt(2025, 6, 1).unwrap(),
@@ -76,7 +77,7 @@ mod tests {
     #[test]
     fn validation_rejects_zero_notional() {
         let mut d = sample_details();
-        d.notional_amount = 0;
+        d.notional_amount = dec!(0);
         assert_eq!(d.validate(), Err(TradeError::NotValid));
     }
 
@@ -114,7 +115,7 @@ mod tests {
         let mut r = TradeRegistry::new();
         let id = make_pending(&mut r);
         let mut updated = sample_details();
-        updated.notional_amount = 1_200_000;
+        updated.notional_amount = dec!(1_200_000);
         r.accept(id, user2(), String::new(), Some(updated)).unwrap();
         assert_eq!(r.get_trade(id).unwrap().state, TradeState::NeedsReapproval);
     }
@@ -124,7 +125,7 @@ mod tests {
         let mut r = TradeRegistry::new();
         let id = make_pending(&mut r);
         let mut updated = sample_details();
-        updated.notional_amount = 1_200_000;
+        updated.notional_amount = dec!(1_200_000);
         r.accept(id, user2(), String::new(), Some(updated)).unwrap();
         r.approve(id, user1(), String::new()).unwrap();
         assert_eq!(r.get_trade(id).unwrap().state, TradeState::Approved);
@@ -146,11 +147,11 @@ mod tests {
         let mut r = TradeRegistry::new();
         let id = make_approved(&mut r);
         r.send_to_execute(id, user2(), String::new()).unwrap();
-        r.book(id, user1(), String::new(), "1.2500".to_string())
+        r.book(id, user1(), String::new(), dec!(1.2500))
             .unwrap();
         let trade = r.get_trade(id).unwrap();
         assert_eq!(trade.state, TradeState::Executed);
-        assert_eq!(trade.details.strike, Some("1.2500".to_string()));
+        assert_eq!(trade.details.strike, Some(dec!(1.2500)));
     }
 
     #[test]
@@ -186,7 +187,7 @@ mod tests {
         let mut r = TradeRegistry::new();
         let id = make_pending(&mut r);
         let mut updated = sample_details();
-        updated.notional_amount = 1_200_000;
+        updated.notional_amount = dec!(1_200_000);
         r.accept(id, user2(), String::new(), Some(updated)).unwrap();
         assert_eq!(
             r.approve(id, user2(), String::new()),
@@ -199,7 +200,7 @@ mod tests {
         let mut r = TradeRegistry::new();
         let id = make_approved(&mut r);
         r.send_to_execute(id, user2(), String::new()).unwrap();
-        r.book(id, user1(), String::new(), "1.25".to_string())
+        r.book(id, user1(), String::new(), dec!(1.25))
             .unwrap();
         assert_eq!(
             r.cancel(id, user1(), String::new()),
@@ -223,7 +224,7 @@ mod tests {
         let mut r = TradeRegistry::new();
         let id = make_pending(&mut r);
         let mut bad = sample_details();
-        bad.notional_amount = 0;
+        bad.notional_amount = dec!(0);
         assert_eq!(
             r.accept(id, user2(), String::new(), Some(bad)),
             Err(TradeError::NotValid)
@@ -250,7 +251,7 @@ mod tests {
         assert_eq!(r.get_history(id).unwrap().len(), 2);
 
         r.send_to_execute(id, user2(), String::new()).unwrap();
-        r.book(id, user1(), String::new(), "1.25".to_string())
+        r.book(id, user1(), String::new(), dec!(1.25))
             .unwrap();
         assert_eq!(r.get_history(id).unwrap().len(), 4);
     }
@@ -288,7 +289,7 @@ mod tests {
             id,
             user1(),
             "Trade executed and booked.".to_string(),
-            "1.3001".to_string(),
+            dec!(1.3001)
         )
         .unwrap();
 
@@ -301,13 +302,13 @@ mod tests {
     fn diff_changed_fields_are_some_unchanged_fields_are_none() {
         let before = sample_details();
         let mut after = sample_details();
-        after.notional_amount = 500_000;
+        after.notional_amount = dec!(500_000);
         after.counterparty = "CounterpartyZ".to_string();
 
         let diff = before.diff(&after);
 
         assert!(!diff.is_empty());
-        assert_eq!(diff.notional_amount, Some((1_000_000, 500_000)));
+        assert_eq!(diff.notional_amount, Some((dec!(1_000_000), dec!(500_000))));
         assert_eq!(
             diff.counterparty,
             Some(("CounterpartyB".to_string(), "CounterpartyZ".to_string()))
@@ -321,7 +322,7 @@ mod tests {
         // When changes exist: only changed fields appear in the output.
         let before = sample_details();
         let mut after = sample_details();
-        after.notional_amount = 1_200_000;
+        after.notional_amount = dec!(1_200_000);
 
         let output = format!("{}", before.diff(&after));
         assert!(output.contains("notional_amount:"));

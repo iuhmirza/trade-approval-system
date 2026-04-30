@@ -1,6 +1,8 @@
 use std::{collections::HashSet, fmt, hash::Hash};
 
 use chrono::NaiveDate;
+use rust_decimal::Decimal;
+use rust_decimal_macros::dec;
 
 use crate::{
     error::TradeError,
@@ -66,12 +68,12 @@ pub struct TradeDetails {
     pub direction: Direction,
     pub style: String,
     pub notional_currency: NotionalCurrency,
-    pub notional_amount: u64,
+    pub notional_amount: Decimal,
     pub underlying: String,
     pub trade_date: NaiveDate,
     pub value_date: NaiveDate,
     pub delivery_date: NaiveDate,
-    pub strike: Option<String>,
+    pub strike: Option<Decimal>,
 }
 
 impl TradeDetails {
@@ -260,7 +262,7 @@ impl Trade {
         &mut self,
         user_id: UserId,
         notes: String,
-        strike: String,
+        strike: Decimal,
     ) -> Result<(), TradeError> {
         match self.state {
             TradeState::SendToCounterparty => {
@@ -301,7 +303,7 @@ impl TradeDetails {
         direction: Direction,
         style: String,
         notional_currency: NotionalCurrency,
-        notional_amount: u64,
+        notional_amount: Decimal,
         underlying: String,
         trade_date: NaiveDate,
         value_date: NaiveDate,
@@ -330,7 +332,7 @@ impl TradeDetails {
         if self.trading_entity.is_empty() || self.counterparty.is_empty() {
             return Err(TradeError::NotValid);
         }
-        if self.notional_amount == 0 {
+        if self.notional_amount == dec!(0) {
             return Err(TradeError::NotValid);
         }
         let currency_str = self.notional_currency.to_string();
