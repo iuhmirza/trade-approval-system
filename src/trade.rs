@@ -332,7 +332,7 @@ impl TradeDetails {
         if self.trading_entity.is_empty() || self.counterparty.is_empty() {
             return Err(TradeError::NotValid);
         }
-        if self.notional_amount == dec!(0) {
+        if self.notional_amount <= dec!(0) {
             return Err(TradeError::NotValid);
         }
         let currency_str = self.notional_currency.to_string();
