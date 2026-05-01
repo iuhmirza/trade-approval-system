@@ -264,6 +264,9 @@ impl Trade {
         notes: String,
         strike: Decimal,
     ) -> Result<(), TradeError> {
+        if strike <= dec!(0) {
+            return Err(TradeError::NotValid);
+        }
         match self.state {
             TradeState::SentToCounterparty => {
                 self.push_history(
